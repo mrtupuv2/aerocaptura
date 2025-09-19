@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AeroCaptura — Boceto v2 (full-screen snap)</title>
+  <meta name="description" content="AeroCaptura · Cinematografía aérea de alto impacto" />
+  <style>
+    :root{
+      --black:#0b0b0f;/* negro base */
+      --blue:#0a5cff; /* azul sección about */
+      --orange:#ff6a00;/* naranja sección portfolio/contacto */
+      --white:#f5f5f7;/* texto claro */
+      --muted:#c7c7d1;
+      --maxw:1200px;
+      --radius:18px;
+      --shadow:0 6px 24px rgba(0,0,0,.32);
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:var(--white);
+      background-color:var(--black); /* se anima vía JS según la sección activa */
+      transition: background-color 600ms ease;
+      scroll-snap-type: y mandatory; /* páginas completas */
+      overscroll-behavior-y: none;
+    }
+
+    /* ====== PANELES A PANTALLA COMPLETA (contenido flotando) ====== */
+    section.panel{
+      min-height:100svh;
+      display:grid;
+      place-items:center;
+      padding:80px 20px;
+      scroll-snap-align:start;
+      background: transparent; /* sin fondo: el body cambia de color */
+    }
+    .section-inner{max-width:var(--maxw);margin:auto}
+
+    h1,h2{margin:0;font-weight:800;letter-spacing:.2px}
+    h2{font-size:clamp(26px,4vw,42px)}
+    p{margin:10px 0 0 0;opacity:.95}
+
+    /* ====== NAVBAR (aparece al pasar del HERO) ====== */
+    header.navbar{position:fixed;inset:0 0 auto 0;transform:translateY(-100%);transition:transform .35s ease, background .35s ease, box-shadow .35s ease;z-index:40;background:rgba(0,0,0,.6);backdrop-filter:saturate(1.2) blur(10px)}
+    header.navbar.show{transform:translateY(0);box-shadow:0 6px 20px rgba(0,0,0,.35)}
+    .nav-inner{max-width:var(--maxw);margin:auto;display:flex;gap:16px;align-items:center;justify-content:center;padding:10px 16px}
+    .nav-inner a{color:var(--white);text-decoration:none;font-weight:700;letter-spacing:.3px;padding:10px 14px;border-radius:999px;opacity:.9}
+    .nav-inner a:hover{background:rgba(255,255,255,.12);opacity:1}
+
+    /* ====== HERO ====== */
+    .hero-wrap{display:flex;flex-direction:column;align-items:center;gap:22px;text-align:center;max-width:900px}
+    .logo-wrap{width:min(56vw,420px)}
+    .logo{width:100%;height:auto;display:block;filter:drop-shadow(0 8px 24px rgba(0,0,0,.45))}
+    .tagline{font-size:clamp(18px,2.5vw,24px);opacity:.9}
+
+    /* Barra de video 5:1 (25:5) */
+    .video-strip{width:min(92vw,1100px);aspect-ratio:25/5;border-radius:var(--radius);overflow:hidden;background:#121218;border:1px solid rgba(255,255,255,.08);position:relative;box-shadow:var(--shadow)}
+    .video-strip iframe,.video-strip .placeholder{position:absolute;inset:0;width:100%;height:100%}
+    .video-strip .placeholder{display:grid;place-items:center;color:var(--muted);font-weight:700;letter-spacing:.6px}
+
+    /* ====== ABOUT ====== */
+    .about-content{display:grid;grid-template-columns:1.2fr .8fr;gap:28px;align-items:center}
+    @media (max-width:900px){.about-content{grid-template-columns:1fr;gap:18px}}
+    .profile-card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:18px;display:grid;grid-template-columns:140px 1fr;gap:16px;align-items:center}
+    .avatar{width:140px;height:140px;border-radius:14px;background:linear-gradient(135deg, #fff 0%, #cfcfcf 100%);display:grid;place-items:center;color:#111;font-weight:900}
+    .btn{display:inline-flex;align-items:center;gap:8px;margin-top:16px;padding:12px 18px;border-radius:999px;background:#111;color:#fff;text-decoration:none;font-weight:800;box-shadow:0 8px 20px rgba(0,0,0,.25)}
+    .btn:hover{filter:brightness(1.05)}
+
+    /* ====== PORTAFOLIO ====== */
+    .grid{margin-top:26px;display:grid;grid-template-columns:repeat(12,1fr);gap:18px}
+    .tile{grid-column:span 6;background:#111;border:1px solid rgba(255,255,255,.14);border-radius:14px;overflow:hidden;aspect-ratio:16/9;position:relative;box-shadow:var(--shadow)}
+    .tile:nth-child(3n){grid-column:span 12}
+    @media (max-width:900px){.tile{grid-column:span 12}}
+    .tile iframe,.tile .tile-ph{position:absolute;inset:0;width:100%;height:100%}
+    .tile .tile-ph{display:grid;place-items:center;color:#9aa3b2;font-weight:800}
+
+    /* ====== CONTACTO ====== */
+    .socials{display:flex;flex-wrap:wrap;gap:12px;margin-top:12px}
+    .chip{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:999px;background:#111;color:#fff;text-decoration:none;font-weight:700;border:1px solid rgba(255,255,255,.18)}
+    .form-embed{margin-top:22px;border-radius:16px;overflow:hidden;border:1px solid rgba(0,0,0,.22);box-shadow:var(--shadow)}
+    .form-embed iframe,.form-embed .form-ph{width:100%;height:640px;display:block;background:#111;color:#9aa3b2}
+    .form-embed .form-ph{display:grid;place-items:center;font-weight:800}
+
+    /* ====== FOOTER ====== */
+    footer{padding:28px 20px;text-align:center;color:var(--muted);font-size:14px}
+
+    /* ====== HELPERS ====== */
+    .section-kicker{opacity:.75;font-weight:800;letter-spacing:.14em;text-transform:uppercase;font-size:12px}
+    .spacer-48{height:48px}
+  </style>
+</head>
+<body>
+
+  <!-- ===== NAVBAR (aparece al pasar del HERO) ===== -->
+  <header class="navbar" id="navbar" aria-label="Menú principal">
+    <nav class="nav-inner">
+      <a href="#home">Home</a>
+      <a href="#about">Quiénes somos</a>
+      <a href="#portfolio">Portafolio</a>
+      <a href="#contact">Contacto</a>
+    </nav>
+  </header>
+
+  <!-- ===== HERO / HOME ===== -->
+  <section id="home" class="panel hero" data-bg="black" aria-label="Inicio">
+    <div class="hero-wrap">
+      <div class="logo-wrap" aria-label="AeroCaptura Logo">
+        <!-- Logo placeholder en SVG (reemplaza si tienes tu logo en PNG/SVG) -->
+        <svg class="logo" viewBox="0 0 1200 300" role="img" aria-label="AeroCaptura">
+          <defs>
+            <linearGradient id="g" x1="0" x2="1">
+              <stop offset="0%" stop-color="#ffffff"/>
+              <stop offset="100%" stop-color="#d9d9e3"/>
+            </linearGradient>
+          </defs>
+          <rect width="1200" height="300" fill="none"/>
+          <text x="50%" y="55%" text-anchor="middle" fill="url(#g)" font-family="Arial, Helvetica, sans-serif" font-weight="900" font-size="140">AeroCaptura</text>
+          <circle cx="1080" cy="80" r="10" fill="#fff"/>
+          <circle cx="1110" cy="110" r="10" fill="#fff"/>
+        </svg>
+      </div>
+      <div class="tagline">Cinematografía aérea de alto impacto</div>
+      <!-- Barra horizontal 5:1 con loop de videos (placeholder si no hay IDs) -->
+      <div class="video-strip" aria-label="Loop de videos">
+        <div class="placeholder">LOOP DE VIDEOS (5:1) · agrega tus IDs de YouTube en el script</div>
+        <iframe id="loopPlayer" title="Loop YouTube" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen hidden></iframe>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT: AZUL ===== -->
+  <section id="about" class="panel" data-bg="blue" aria-label="Quiénes somos (azul)">
+    <div class="section-inner">
+      <div class="section-kicker">Quiénes somos</div>
+      <h2>AeroCaptura</h2>
+      <div class="spacer-48"></div>
+
+      <div class="about-content">
+        <div>
+          <p>Proyecto de cinematografía aérea con enfoque minimalista y potente. Creamos piezas visuales con drones: hiperlapses, inmobiliario, publicidad y eventos — sin ruido, solo impacto.</p>
+          <a class="btn" href="#portfolio" title="Ver portafolio">Ver portafolio →</a>
+        </div>
+        <div class="profile-card">
+          <div class="avatar">FOTO</div>
+          <div>
+            <strong>Fundador</strong>
+            <p>Descripción corta del fundador. Visión directa, estética negra, precisión técnica y narrativa visual clara.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== ABOUT: NARANJA (transición / CTA) ===== -->
+  <section class="panel" data-bg="orange" aria-label="Qué hacemos (naranja)">
+    <div class="section-inner">
+      <h2>Qué hacemos</h2>
+      <p>Hiperlapses aéreos, cobertura de eventos, recorridos inmobiliarios, tomas publicitarias y contenido para marcas.</p>
+      <div class="spacer-48"></div>
+      <a class="btn" href="#portfolio" title="Ver portafolio">Portafolio →</a>
+    </div>
+  </section>
+
+  <!-- ===== PORTAFOLIO ===== -->
+  <section id="portfolio" class="panel" data-bg="orange" aria-label="Portafolio">
+    <div class="section-inner">
+      <div class="section-kicker">Proyectos</div>
+      <h2>Portafolio</h2>
+      <div class="grid" id="portfolioGrid">
+        <!-- Placeholders (si no defines IDs en el script) -->
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+        <div class="tile"><div class="tile-ph">VIDEO · 16:9</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== CONTACTO ===== -->
+  <section id="contact" class="panel" data-bg="orange" aria-label="Contacto">
+    <div class="section-inner">
+      <div class="section-kicker">Hablemos</div>
+      <h2>Contacto</h2>
+      <div class="socials">
+        <a class="chip" href="#" target="_blank" rel="noopener">TikTok</a>
+        <a class="chip" href="#" target="_blank" rel="noopener">Instagram</a>
+        <a class="chip" href="#" target="_blank" rel="noopener">YouTube</a>
+        <a class="chip" href="mailto:correo@aerocaptura.com">Correo</a>
+      </div>
+      <div class="form-embed" id="formEmbed">
+        <!-- Reemplaza el src del iframe con tu Google Forms embed -->
+        <div class="form-ph">Google Form (iframe) — coloca aquí tu URL de Forms</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== FOOTER (negro) ===== -->
+  <footer data-bg="black">
+    © 2025 AeroCaptura. Todos los derechos reservados.
+  </footer>
+
+  <script>
+    // ===== COLORES desde CSS vars =====
+    const css = getComputedStyle(document.documentElement);
+    const COLORS = {
+      black: css.getPropertyValue('--black').trim(),
+      blue: css.getPropertyValue('--blue').trim(),
+      orange: css.getPropertyValue('--orange').trim()
+    };
+
+    // ===== NAVBAR: visible cuando el HERO deja de estar a la vista =====
+    (function(){
+      const nav = document.getElementById('navbar');
+      const hero = document.getElementById('home');
+      const ob = new IntersectionObserver(entries => {
+        entries.forEach(e => nav.classList.toggle('show', !e.isIntersecting));
+      }, {threshold: 0.6});
+      ob.observe(hero);
+    })();
+
+    // ===== BACKGROUND por sección usando IntersectionObserver (full-screen snap sin "scroll" visible) =====
+    (function(){
+      const panels = document.querySelectorAll('section.panel');
+      // color inicial
+      document.body.style.backgroundColor = COLORS[panels[0].dataset.bg] || COLORS.black;
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(entry => {
+          if(entry.isIntersecting && entry.intersectionRatio > 0.55){
+            const key = entry.target.dataset.bg;
+            const color = COLORS[key] || COLORS.black;
+            document.body.style.backgroundColor = color; // transición suave definida en CSS
+          }
+        });
+      }, {threshold: [0.55, 0.8]});
+      panels.forEach(p => io.observe(p));
+    })();
+
+    // ===== LOOP DE VIDEOS (barra 5:1 en HERO) =====
+    // Agrega tus IDs de YouTube, por ejemplo: ["a1b2C3d4", "e5F6g7H8", "i9J0kLmN"]
+    const VIDEO_IDS = [];
+    const loopIframe = document.getElementById('loopPlayer');
+
+    function loadLoopVideo(index){
+      const id = VIDEO_IDS[index % VIDEO_IDS.length];
+      const params = new URLSearchParams({
+        autoplay: '1',
+        mute: '1',
+        controls: '0',
+        loop: '1',
+        playsinline: '1',
+        rel: '0',
+        modestbranding: '1',
+        playlist: id
+      }).toString();
+      loopIframe.src = `https://www.youtube.com/embed/${id}?${params}`;
+    }
+
+    if (VIDEO_IDS.length){
+      document.querySelector('.video-strip .placeholder')?.setAttribute('hidden','hidden');
+      loopIframe.hidden = false;
+      let idx = 0;
+      loadLoopVideo(idx);
+      setInterval(() => { idx = (idx + 1) % VIDEO_IDS.length; loadLoopVideo(idx); }, 8000);
+    }
+
+    // ===== PORTAFOLIO: poblar grid desde IDs (opcional) =====
+    const PORTFOLIO_IDS = [];
+
+    function buildPortfolio(ids){
+      if (!ids.length) return;
+      const grid = document.getElementById('portfolioGrid');
+      grid.innerHTML = '';
+      ids.forEach((id, i)=>{
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        const iframe = document.createElement('iframe');
+        iframe.title = `Proyecto ${i+1}`;
+        iframe.frameBorder = '0';
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+        iframe.allowFullscreen = true;
+        iframe.src = `https://www.youtube.com/embed/${id}?rel=0&modestbranding=1`;
+        tile.appendChild(iframe);
+        grid.appendChild(tile);
+      });
+    }
+
+    buildPortfolio(PORTFOLIO_IDS);
+
+    // ===== GOOGLE FORMS: inserción (reemplaza FORM_URL) =====
+    const FORM_URL = '';
+    if (FORM_URL){
+      const wrap = document.getElementById('formEmbed');
+      wrap.innerHTML = '';
+      const f = document.createElement('iframe');
+      f.src = FORM_URL;
+      f.setAttribute('frameborder','0');
+      f.setAttribute('marginheight','0');
+      f.setAttribute('marginwidth','0');
+      f.style.width = '100%';
+      f.style.height = '640px';
+      wrap.appendChild(f);
+    }
+  </script>
+</body>
+</html>
